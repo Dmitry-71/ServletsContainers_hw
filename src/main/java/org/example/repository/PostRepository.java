@@ -1,23 +1,23 @@
 package org.example.repository;
 
+import org.example.exception.NotFoundException;
 import org.example.model.Post;
+;
+
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-// Stub
+
 public class PostRepository {
+    private final ConcurrentHashMap<Long, Post> posts;
+    private final AtomicLong idCounter = new AtomicLong(0L);
 
-    private final AtomicLong postID;
-    private final Map<Long, Post> posts;
-
-    public PostRepository() {
-        postID = new AtomicLong(0);
-        posts = new ConcurrentHashMap<>();
+    public PostRepository()  {
+        posts  = new ConcurrentHashMap<>();
     }
 
     public List<Post> all() {
@@ -26,22 +26,31 @@ public class PostRepository {
 
     public Optional<Post> getById(long id) {
         return Optional.ofNullable(posts.get(id));
+
     }
 
     public Post save(Post post) {
-        long postExistingID = post.getId();
-        if (postExistingID > 0 && posts.containsKey(postExistingID)) {
-            posts.replace(postExistingID, post);
-        } else {
-            // Specify postID.
-            long newPostID = postExistingID == 0 ? postID.incrementAndGet() : postExistingID;
-            post.setId(newPostID);
-            posts.put(newPostID, post);
+        if (post.getId() != 0 && !posts.containsKey(post.getId())) {
+            throw new NotFoundException();
+
+        }else {
+            posts.put(post.getId(), post);
         }
+
+        if(post.getId() == 0) {
+            var newId = idCounter.incrementAndGet();
+            post.setId(newId);
+            posts.put(post.getId(), post);
+        }
+
         return post;
     }
 
     public void removeById(long id) {
-        posts.remove(id);
+        if (posts.containsKey(id)) {
+            posts.remove(id);
+        } else {
+            throw new NotFoundException("Введен неверный id");
+        }
     }
 }
